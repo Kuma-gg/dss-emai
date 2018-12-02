@@ -1,2 +1,2 @@
-# dss-emai
+# dss-email
 Final Project email component
