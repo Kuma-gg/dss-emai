@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -11,6 +12,25 @@ import (
 type Mail struct {
 	Name string
 	Mail string
+}
+
+type EmailMessage  struct {
+	Users []User
+	Event string
+}
+
+type ConfirmationQueue struct {
+	Type    string
+	Message string
+	Event string
+}
+
+type User struct {
+	ID        int
+	Name      string
+	Firstname string
+	Lastname  string
+	Email     string
 }
 
 func failOnError(err error, msg string) {
@@ -52,8 +72,8 @@ func receiveMails() {
 	go func() {
 		for d := range msgs {
 
-			var mail Mail
-			errMail := json.Unmarshal(d.Body, &mail)
+			var mails EmailMessage
+			errMail := json.Unmarshal(d.Body, &mails)
 			if errMail != nil {
 				panic(errMail)
 			}
@@ -61,15 +81,26 @@ func receiveMails() {
 			if err != nil {
 				log.Fatal(err)
 			}
-
+			var UsersList []User
+			UsersList = mails.Users
+			event := mails.Event
 			//defer to close when you're done with it, not because you think it's idiomatic!
 			defer f.Close()
-			//set output of logs to f
-			log.SetOutput(f)
-			log.Println("mail sent to " + mail.Mail)
+			for c := range UsersList {
+				user := UsersList[c]
+				//set output of logs to f
+				log.SetOutput(f)
+				log.Println("mails sent to " + user.Name + " Mail : " + user.Email +" Event : " +event)
+				fmt.Println("mails sent to " + user.Name + " Mail : " + user.Email +" Event : " +event)
+			}
 
-			go sendMailMessage(d.Body) //creo?
+			log.Println("INFO : Sent successfully ")
+
+			documentJSON, _ := json.Marshal(ConfirmationQueue{Type: "successfully", Message: " Sent successfully "})
+			sendMailMessage(documentJSON)
+
 			d.Ack(false)
+
 		}
 	}()
 
